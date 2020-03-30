@@ -231,7 +231,7 @@ export class Appservice extends EventEmitter {
 
         this.app.use(express.json({
             verify: (req: any, res, buf) => {
-                req.rawBody = req.body;
+                req.rawBody = buf;
             },
         }));
         this.app.use(morgan("combined"));
