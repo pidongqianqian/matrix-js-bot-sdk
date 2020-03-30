@@ -658,6 +658,9 @@ describe('MatrixClient', () => {
             const max = 5;
             let count = 0;
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             const waitPromise = new Promise((resolve, reject) => {
                 for (let i = 0; i <= max * 2; i++) {
                     http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content) => {
@@ -693,6 +696,9 @@ describe('MatrixClient', () => {
 
             simple.mock(storage, "getFilter").returnWith({id: 12, filter: filter});
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content) => {
                 client.stop();
                 return {next_batch: "123"};
@@ -718,6 +724,9 @@ describe('MatrixClient', () => {
                 expect(filterObj.id).toEqual(filterId);
                 expect(filterObj.filter).toMatchObject(filter);
             });
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
@@ -748,6 +757,9 @@ describe('MatrixClient', () => {
                 expect(filterObj.filter).toMatchObject(filter);
             });
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             http.when("POST", "/_matrix/client/r0/user").respond(200, (path, content) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/user/${encodeURIComponent(userId)}/filter`);
                 expect(content).toMatchObject(filter);
@@ -771,6 +783,9 @@ describe('MatrixClient', () => {
             const filterId = "abc12345";
 
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
@@ -800,6 +815,9 @@ describe('MatrixClient', () => {
                     if (setSyncTokenFn.callCount === 2) resolve();
                 });
             }));
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
@@ -837,6 +855,9 @@ describe('MatrixClient', () => {
                 });
             }));
 
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
+
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
 
@@ -863,6 +884,9 @@ describe('MatrixClient', () => {
             const presence = "online";
 
             simple.mock(storage, "getFilter").returnWith({id: filterId, filter: filter});
+
+            // The sync handler checks which rooms it should ignore
+            http.when("GET", "/_matrix/client/r0/joined_rooms").respond(200, {joined_rooms: []});
 
             http.when("GET", "/_matrix/client/r0/sync").respond(200, (path, content, req) => {
                 expect(req).toBeDefined();
@@ -1914,6 +1938,64 @@ describe('MatrixClient', () => {
         });
     });
 
+    describe('getEventContext', () => {
+        it('should use the right endpoint', async () => {
+            const {client, http, hsUrl} = createTestClient();
+
+            const targetEvent = {eventId: "$test:example.org", type: "m.room.message", content: {body: "test", msgtype: "m.text"}};
+            const before = [{type: "m.room.message", content: {body: "1", msgtype: "m.text"}}, {
+                type: "m.room.message",
+                content: {body: "2", msgtype: "m.text"}
+            }];
+            const after = [{type: "m.room.message", content: {body: "3", msgtype: "m.text"}}, {
+                type: "m.room.message",
+                content: {body: "4", msgtype: "m.text"}
+            }];
+            const state = [{
+                type: "m.room.member",
+                state_key: "@alice:example.org",
+                content: {body: "3", msgtype: "m.text"}
+            }, {type: "m.room.member", state_key: "@alice:example.org", content: {body: "4", msgtype: "m.text"}}]
+            const roomId = "!abc123:example.org";
+            const limit = 2;
+
+            http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
+                expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
+                expect(req.opts.qs['limit']).toEqual(limit);
+                return {
+                    event: targetEvent,
+                    events_before: before,
+                    events_after: after,
+                    state: state,
+                };
+            });
+
+            http.flushAllExpected();
+            const result = await client.getEventContext(roomId, targetEvent.eventId, limit);
+            expect(result).toBeDefined();
+            expect(result.event).toBeDefined();
+            expect(result.event.raw).toMatchObject(targetEvent);
+            expect(result.before).toBeDefined();
+            expect(result.before.length).toBe(2);
+            expect(result.before[0]).toBeDefined();
+            expect(result.before[0].raw).toMatchObject(before[0]);
+            expect(result.before[1]).toBeDefined();
+            expect(result.before[1].raw).toMatchObject(before[1]);
+            expect(result.after).toBeDefined();
+            expect(result.after.length).toBe(2);
+            expect(result.after[0]).toBeDefined();
+            expect(result.after[0].raw).toMatchObject(after[0]);
+            expect(result.after[1]).toBeDefined();
+            expect(result.after[1].raw).toMatchObject(after[1]);
+            expect(result.state).toBeDefined();
+            expect(result.state.length).toBe(2);
+            expect(result.state[0]).toBeDefined();
+            expect(result.state[0].raw).toMatchObject(state[0]);
+            expect(result.state[1]).toBeDefined();
+            expect(result.state[1].raw).toMatchObject(state[1]);
+        });
+    });
+
     describe('getUserProfile', () => {
         it('should call the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
@@ -2669,6 +2751,71 @@ describe('MatrixClient', () => {
             http.flushAllExpected();
             const result = await client.redactEvent(roomId, eventId, reason);
             expect(result).toEqual(eventId);
+        });
+    });
+
+    describe('setUserPowerLevel', () => {
+        it('should use the current power levels as a base', async () => {
+            const {client} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const userId = "@testing:example.org";
+            const targetLevel = 65;
+            const basePowerLevels = {
+                ban: 100,
+                users: {
+                    "@alice:example.org": 100,
+                },
+            };
+
+            const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return basePowerLevels;
+            });
+
+            const sendStateEventSpy = simple.mock(client, "sendStateEvent").callFn((rid, evType, stateKey, content) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                expect(content).toMatchObject(Object.assign({}, {users: {[userId]: targetLevel}}, basePowerLevels));
+                return null;
+            });
+
+            await client.setUserPowerLevel(userId, roomId, targetLevel);
+            expect(getStateEventSpy.callCount).toBe(1);
+            expect(sendStateEventSpy.callCount).toBe(1);
+        });
+
+        it('should fill in the users object if not present on the original state event', async () => {
+            const {client} = createTestClient();
+
+            const roomId = "!testing:example.org";
+            const userId = "@testing:example.org";
+            const targetLevel = 65;
+            const basePowerLevels = {
+                ban: 100,
+            };
+
+            const getStateEventSpy = simple.mock(client, "getRoomStateEvent").callFn((rid, evType, stateKey) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                return basePowerLevels;
+            });
+
+            const sendStateEventSpy = simple.mock(client, "sendStateEvent").callFn((rid, evType, stateKey, content) => {
+                expect(rid).toEqual(roomId);
+                expect(evType).toEqual("m.room.power_levels");
+                expect(stateKey).toEqual("");
+                expect(content).toMatchObject(Object.assign({}, {users: {[userId]: targetLevel}}, basePowerLevels));
+                return null;
+            });
+
+            await client.setUserPowerLevel(userId, roomId, targetLevel);
+            expect(getStateEventSpy.callCount).toBe(1);
+            expect(sendStateEventSpy.callCount).toBe(1);
         });
     });
 

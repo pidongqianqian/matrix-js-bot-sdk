@@ -41,7 +41,7 @@ export class UnstableApis {
      * @return {Promise<string>} Resolves to the created group ID.
      */
     public async createGroup(localpart: string): Promise<string> {
-        const response = await this.client.doRequest("POST", "/_matrix/client/r0/create_group", null, {"localpart": localpart});
+        const response = await this.client.doRequest("POST", "/_matrix/client/unstable/create_group", null, {"localpart": localpart});
         return response["group_id"];
     }
 
@@ -54,7 +54,7 @@ export class UnstableApis {
      *  homeserver accepted/rejected the invite right away.
      */
     public async inviteUserToGroup(groupId: string, userId: string): Promise<"join" | "invite" | "reject"> {
-        const response = await this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`, null, {});
+        const response = await this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/invite/${encodeURIComponent(userId)}`, null, {});
         return response["state"];
     }
 
@@ -62,20 +62,20 @@ export class UnstableApis {
      * Kicks a user from a group.
      * @param {string} groupId The group ID to kick the user from.
      * @param {string} userId The user ID to kick from the group.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async kickUserFromGroup(groupId: string, userId: string): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/users/remove/${encodeURIComponent(userId)}`, null, {});
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/users/remove/${encodeURIComponent(userId)}`, null, {});
     }
 
     /**
      * Updates a group's profile
      * @param {string} groupId The group ID to update.
      * @param {GroupProfile} profile The profile to update the group with.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async setGroupProfile(groupId: string, profile: GroupProfile): Promise<any> {
-        return this.client.doRequest("POST", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/profile`, null, profile);
+        return this.client.doRequest("POST", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/profile`, null, profile);
     }
 
     /**
@@ -83,10 +83,10 @@ export class UnstableApis {
      * require an invite (invite).
      * @param {string} groupId The group ID to set the policy for.
      * @param {"open" | "invite"} policy The policy to set.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async setGroupJoinPolicy(groupId: string, policy: "open" | "invite"): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`, null, {
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/settings/m.join_policy`, null, {
             "m.join_policy": {
                 "type": policy,
             },
@@ -98,10 +98,10 @@ export class UnstableApis {
      * @param {string} groupId The group ID to add the room to.
      * @param {string} roomId The room ID to add to the group.
      * @param {boolean} isPublic Whether this group-room association is visible to non-members. Optional. Defaults to true.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async addRoomToGroup(groupId: string, roomId: string, isPublic = true): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`, null, {
             "m.visibility": { type: isPublic ? "public" : "private" },
         });
     }
@@ -111,10 +111,10 @@ export class UnstableApis {
      * @param {string} groupId The group ID of the room to update.
      * @param {string} roomId The room ID of the room to update.
      * @param {boolean} isPublic Whether this group-room association is visible to non-members.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async updateGroupRoomVisibility(groupId: string, roomId: string, isPublic: boolean): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`, null, {
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}/config/m.visibility`, null, {
             type: isPublic ? "public" : "private",
         });
     }
@@ -123,10 +123,10 @@ export class UnstableApis {
      * Removes a room from a group.
      * @param {string} groupId The group ID to remove the room from.
      * @param {string} roomId The room ID to remove from the group.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async removeRoomFromGroup(groupId: string, roomId: string): Promise<any> {
-        return this.client.doRequest("DELETE", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`);
+        return this.client.doRequest("DELETE", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/admin/rooms/${encodeURIComponent(roomId)}`);
     }
 
     /**
@@ -135,74 +135,74 @@ export class UnstableApis {
      * @return {Promise<GroupProfile>} Resolves to the profile of the group.
      */
     public async getGroupProfile(groupId: string): Promise<GroupProfile> {
-        return this.client.doRequest("GET", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/profile`);
+        return this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/profile`);
     }
 
     /**
      * Gets the users in a group.
      * @param {string} groupId The group ID of which to get the users.
-     * @return {Promise<any[]>} Resolves to an array of all the users in the group.
+     * @return {Promise<*[]>} Resolves to an array of all the users in the group.
      */
     public async getGroupUsers(groupId: string): Promise<any[]> {
-        const response = await this.client.doRequest("GET", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/users`);
+        const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/users`);
         return response["chunk"];
     }
 
     /**
      * Gets the invited users of a group.
      * @param {string} groupId The group ID of which to get the invited users.
-     * @return {Promise<any[]>} Resolves to an array of all the users invited to the group.
+     * @return {Promise<*[]>} Resolves to an array of all the users invited to the group.
      */
     public async getGroupInvitedUsers(groupId: string): Promise<any[]> {
-        const response = await this.client.doRequest("GET", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/invited_users`);
+        const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/invited_users`);
         return response["chunk"];
     }
 
     /**
      * Gets the rooms of a group.
      * @param {string} groupId The group ID of which to get all the rooms.
-     * @return {Promise<any[]>} Resolves to an array of all the rooms of the group.
+     * @return {Promise<*[]>} Resolves to an array of all the rooms of the group.
      */
     public async getGroupRooms(groupId: string): Promise<any[]> {
-        const response = await this.client.doRequest("GET", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/rooms`);
+        const response = await this.client.doRequest("GET", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/rooms`);
         return response["chunk"];
     }
 
     /**
      * Accepts an invite to a group.
      * @param {string} groupId The group ID of which to accept the invite of.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async acceptGroupInvite(groupId: string): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/self/accept_invite`, null, {});
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/accept_invite`, null, {});
     }
 
     /**
      * Joins a group.
      * @param {string} groupId The group ID to join.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async joinGroup(groupId: string): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/self/join`, null, {});
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/join`, null, {});
     }
 
     /**
      * Leaves a group.
      * @param {string} groupId The group ID of the group to leave.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async leaveGroup(groupId: string): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/self/leave`, null, {});
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/leave`, null, {});
     }
 
     /**
      * Sets the publicity of a group.
      * @param {string} groupId The group ID to set the publicity of.
      * @param {boolean} publicise If the group should be publicised.
-     * @return {Promise<any>} Resolves when completed.
+     * @return {Promise<*>} Resolves when completed.
      */
     public async setGroupPublicity(groupId: string, publicise: boolean): Promise<any> {
-        return this.client.doRequest("PUT", `/_matrix/client/r0/groups/${encodeURIComponent(groupId)}/self/update_publicity`, null, {
+        return this.client.doRequest("PUT", `/_matrix/client/unstable/groups/${encodeURIComponent(groupId)}/self/update_publicity`, null, {
             publicise,
         });
     }
@@ -212,17 +212,17 @@ export class UnstableApis {
      * @return {Promise<string[]>} Resolves to the group IDs of the joined groups.
      */
     public async getJoinedGroups(): Promise<string[]> {
-        const response = await this.client.doRequest("GET", "/_matrix/client/r0/joined_groups");
+        const response = await this.client.doRequest("GET", "/_matrix/client/unstable/joined_groups");
         return response["groups"];
     }
 
     /**
-     * Gets the group IDs that the spdecified user has publicised.
+     * Gets the group IDs that the specified user has publicised.
      * @param {string} userId The user ID to fetch the publicised groups of.
      * @return {Promise<string[]>} Resolves to the publicised group IDs of that user.
      */
     public async getPublicisedGroups(userId: string): Promise<string[]> {
-        const response = await this.client.doRequest("GET", `/_matrix/client/r0/publicised_groups/${encodeURIComponent(userId)}`);
+        const response = await this.client.doRequest("GET", `/_matrix/client/unstable/publicised_groups/${encodeURIComponent(userId)}`);
         return response["groups"];
     }
 
