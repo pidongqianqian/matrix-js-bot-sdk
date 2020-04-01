@@ -230,6 +230,7 @@ export class Appservice extends EventEmitter {
         options.storage = this.storage;
 
         this.app.use(express.json({
+            limit: "50mb",
             verify: (req: any, res, buf) => {
                 req.rawBody = buf;
             },
