@@ -1,5 +1,5 @@
 {
-  "name": "@soru/matrix-bot-sdk",
+  "name": "@sorunome/matrix-bot-sdk",
   "version": "0.5.3",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
