@@ -1,7 +1,11 @@
 const fs = require("fs");
 const child_process = require('child_process');
 
-const cwd = process.env.INIT_CWD || process.cwd();
+let cwd = process.env.INIT_CWD || process.cwd();
+if (fs.existsSync("node_modules/matrix-bot-sdk")) {
+    cwd += "/node_modules/matrix-bot-sdk";
+}
+console.log("Using directory", cwd);
 
 if (fs.existsSync("lib")) {
     console.log("Build output already present - skipping build");
