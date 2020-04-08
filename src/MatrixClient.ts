@@ -1280,7 +1280,6 @@ export class MatrixClient extends EventEmitter {
             }
         }
 
-
         return new Promise(async (resolve, reject) => {
             try {
 
