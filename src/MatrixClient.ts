@@ -1270,15 +1270,16 @@ export class MatrixClient extends EventEmitter {
             allowGetBody: true,
         };
 
-        if (Buffer.isBuffer(body)) {
-            params.headers["Content-Type"] = contentType;
-            params.body = body;
-        } else if (body === null) {
-            params.body = null
-        } else {
-            params.headers["Content-Type"] = "application/json";
-            params.body = JSON.stringify(body);
+        if (body) {
+            if (Buffer.isBuffer(body)) {
+                params.headers["Content-Type"] = contentType;
+                params.body = body;
+            } else {
+                params.headers["Content-Type"] = "application/json";
+                params.body = JSON.stringify(body);
+            }
         }
+
 
         return new Promise(async (resolve, reject) => {
             try {
