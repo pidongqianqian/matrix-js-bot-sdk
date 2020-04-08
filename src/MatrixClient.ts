@@ -1284,24 +1284,24 @@ export class MatrixClient extends EventEmitter {
             try {
 
                 let response = await getRequestFn()(params);
-                let body = response.body;
+                let resBody = response.body;
                 if (typeof (response.body) === 'string') {
                     try {
-                        body = JSON.parse(response.body);
+                        resBody = JSON.parse(response.body);
                     } catch (e) {
                         reject(e);
                     }
                 }
                 // Don't log the body unless we're in debug mode. They can be large.
                 if (LogService.level.includes(LogLevel.DEBUG)) {
-                    const redactedBody = this.redactObjectForLogging(body);
+                    const redactedBody = this.redactObjectForLogging(resBody);
                     LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
                 }
                 if (response.statusCode < 200 || response.statusCode >= 300) {
-                    const redactedBody = this.redactObjectForLogging(body);
+                    const redactedBody = this.redactObjectForLogging(resBody);
                     LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
                     reject(response);
-                } else resolve(raw ? response : body);
+                } else resolve(raw ? response : resBody);
             } catch (err) {
                 LogService.error("MatrixLiteClient (REQ-" + requestId + ")", (err.response && err.response.body) || err);
                 reject(err.response || err);
