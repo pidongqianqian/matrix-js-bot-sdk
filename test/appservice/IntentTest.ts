@@ -10,7 +10,7 @@ import {
 import * as expect from "expect";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "../TestUtils";
+import { expectArrayEquals, requestWrapper } from "../TestUtils";
 
 describe('Intent', () => {
     it('should prepare the underlying client for a bot user', async () => {
@@ -135,7 +135,7 @@ describe('Intent', () => {
 
         it('should try to register the user when not flagged as such', async () => {
             const http = new MockHttpBackend();
-            setRequestFn(http.requestFn);
+            setRequestFn(requestWrapper(http.requestFn));
 
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -175,7 +175,7 @@ describe('Intent', () => {
 
         it('should gracefully handle M_USER_IN_USE', async () => {
             const http = new MockHttpBackend();
-            setRequestFn(http.requestFn);
+            setRequestFn(requestWrapper(http.requestFn));
 
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";
@@ -216,7 +216,7 @@ describe('Intent', () => {
 
         it('should handle unexpected errors', async () => {
             const http = new MockHttpBackend();
-            setRequestFn(http.requestFn);
+            setRequestFn(requestWrapper(http.requestFn));
 
             const userId = "@someone:example.org";
             const botUserId = "@bot:example.org";

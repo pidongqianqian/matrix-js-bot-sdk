@@ -2,6 +2,7 @@ import * as expect from "expect";
 import { IStorageProvider, MatrixClient, setRequestFn, SynchronousMatrixClient } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+import { requestWrapper } from "./TestUtils";
 
 class TestSyncMatrixClient extends SynchronousMatrixClient {
     constructor(client: MatrixClient) {
@@ -20,7 +21,7 @@ export function createSyncTestClient(storage: IStorageProvider = null): { client
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage);
-    setRequestFn(http.requestFn);
+    setRequestFn(requestWrapper(http.requestFn));
 
     return {http, hsUrl, accessToken, client: new TestSyncMatrixClient(client)};
 }

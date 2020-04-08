@@ -1,6 +1,6 @@
-import * as origRequestFn from "request";
+import got from "got";
 
-let requestFn = origRequestFn;
+let requestFn = got;
 
 /**
  * Sets the function to use for performing HTTP requests. Must be compatible with `request`.

@@ -1,9 +1,10 @@
-import { Appservice, IPreprocessor, setRequestFn } from "../../src";
+import {Appservice, IPreprocessor, setRequestFn} from "../../src";
 import * as expect from "expect";
 import * as getPort from "get-port";
-import * as requestPromise from "request-promise";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
+import got from "got";
+import {requestWrapper} from "../TestUtils";
 
 async function beginAppserviceWithProtocols(protocols: string[]) {
     const port = await getPort();
@@ -29,14 +30,15 @@ async function beginAppserviceWithProtocols(protocols: string[]) {
         return Promise.resolve();
     };
 
-    async function doCall(route: string, opts: any = {}, qs: any = {}) {
-        return await requestPromise({
-            uri: `http://localhost:${port}${route}`,
+    async function doCall(route: string, opts: any = {}, qs: any = {}, json: boolean = false) {
+        const params = {
+            url: `http://localhost:${port}${route}`,
             method: "GET",
-            qs: {access_token: hsToken, ...qs},
-            json: true,
+            searchParams: {access_token: hsToken, ...qs},
             ...opts,
-        });
+        };
+        if (json) return await got(params).json();
+        return await got(params);
     }
 
     await appservice.begin();
@@ -730,26 +732,25 @@ describe('Appservice', () => {
             async function verifyAuth(method: string, route: string) {
                 async function doCall(opts: any = {}) {
                     try {
-                        await requestPromise({
-                            uri: `http://localhost:${port}${route}`,
+                        await got({
+                            url: `http://localhost:${port}${route}`,
                             method: method,
-                            json: true,
                             ...opts,
-                        });
+                        }).json();
 
                         // noinspection ExceptionCaughtLocallyJS
                         throw new Error("Authentication passed when it shouldn't have");
                     } catch (e) {
-                        expect(e.error).toMatchObject({
+                        expect(JSON.parse(e.response.body)).toMatchObject({
                             errcode: "AUTH_FAILED",
                             error: "Authentication failed",
                         });
-                        expect(e.statusCode).toBe(401);
+                        expect(e.response.statusCode).toBe(401);
                     }
                 }
 
                 await doCall();
-                await doCall({qs: {access_token: "WRONG_TOKEN"}});
+                await doCall({searchParams: {access_token: "WRONG_TOKEN"}});
                 await doCall({headers: {Authorization: "Bearer WRONG_TOKEN"}});
                 await doCall({headers: {Authorization: "NotBearer WRONG_TOKEN"}});
             }
@@ -798,18 +799,18 @@ describe('Appservice', () => {
         try {
             async function doCall(route: string, opts: any = {}, err: any) {
                 try {
-                    await requestPromise({
-                        uri: `http://localhost:${port}${route}`,
+                    await got({
+                        url: `http://localhost:${port}${route}`,
                         method: "PUT",
-                        qs: {access_token: hsToken},
+                        searchParams: {access_token: hsToken},
                         ...opts,
                     });
 
                     // noinspection ExceptionCaughtLocallyJS
                     throw new Error("Request passed when it shouldn't have");
                 } catch (e) {
-                    expect(e.error).toMatchObject(err);
-                    expect(e.statusCode).toBe(400);
+                    expect(JSON.parse(e.response.body)).toMatchObject(err);
+                    expect(e.response.statusCode).toBe(400);
                 }
             }
 
@@ -872,10 +873,10 @@ describe('Appservice', () => {
             appservice.on("room.message", messageSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -939,10 +940,10 @@ describe('Appservice', () => {
             appservice.on("room.message", messageSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1013,10 +1014,10 @@ describe('Appservice', () => {
             appservice.on("room.message", messageSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1109,10 +1110,10 @@ describe('Appservice', () => {
             appservice.on("room.message", messageSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1236,10 +1237,10 @@ describe('Appservice', () => {
             appservice.on("room.invite", inviteSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1325,10 +1326,10 @@ describe('Appservice', () => {
             appservice.on("room.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1396,13 +1397,12 @@ describe('Appservice', () => {
             appservice.on("query.user", userSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
-                    json: true,
+                    searchParams: {access_token: hsToken},
                     ...opts,
-                });
+                }).json();
                 expect(res).toMatchObject({});
 
                 expect(nameSpy.callCount).toBe(0);
@@ -1445,7 +1445,7 @@ describe('Appservice', () => {
         };
 
         const http = new MockHttpBackend();
-        setRequestFn(http.requestFn);
+        setRequestFn(requestWrapper(http.requestFn));
 
         await appservice.begin();
 
@@ -1484,13 +1484,12 @@ describe('Appservice', () => {
                 });
 
                 http.flushAllExpected();
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
-                    json: true,
+                    searchParams: {access_token: hsToken},
                     ...opts,
-                });
+                }).json();
                 expect(res).toMatchObject({});
 
                 expect(userSpy.callCount).toBe(1);
@@ -1529,7 +1528,7 @@ describe('Appservice', () => {
         };
 
         const http = new MockHttpBackend();
-        setRequestFn(http.requestFn);
+        setRequestFn(requestWrapper(http.requestFn));
 
         await appservice.begin();
 
@@ -1568,13 +1567,12 @@ describe('Appservice', () => {
                 });
 
                 http.flushAllExpected();
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
-                    json: true,
+                    searchParams: {access_token: hsToken},
                     ...opts,
-                });
+                }).json();
                 expect(res).toMatchObject({});
 
                 expect(userSpy.callCount).toBe(1);
@@ -1637,22 +1635,21 @@ describe('Appservice', () => {
 
             async function doCall(route: string, opts: any = {}) {
                 try {
-                    await requestPromise({
-                        uri: `http://localhost:${port}${route}`,
+                    await got({
+                        url: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
-                        json: true,
+                        searchParams: {access_token: hsToken},
                         ...opts,
-                    });
+                    }).json();
 
                     // noinspection ExceptionCaughtLocallyJS
                     throw new Error("Request finished when it should not have");
                 } catch (e) {
-                    expect(e.error).toMatchObject({
+                    expect(JSON.parse(e.response.body)).toMatchObject({
                         errcode: "USER_DOES_NOT_EXIST",
                         error: "User not created",
                     });
-                    expect(e.statusCode).toBe(404);
+                    expect(e.response.statusCode).toBe(404);
                 }
 
                 expect(nameSpy.callCount).toBe(0);
@@ -1719,22 +1716,21 @@ describe('Appservice', () => {
 
             async function doCall(route: string, opts: any = {}) {
                 try {
-                    await requestPromise({
-                        uri: `http://localhost:${port}${route}`,
+                    await got({
+                        url: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
-                        json: true,
+                        searchParams: {access_token: hsToken},
                         ...opts,
-                    });
+                    }).json();
 
                     // noinspection ExceptionCaughtLocallyJS
                     throw new Error("Request finished when it should not have");
                 } catch (e) {
-                    expect(e.error).toMatchObject({
+                    expect(JSON.parse(e.response.body)).toMatchObject({
                         errcode: "USER_DOES_NOT_EXIST",
                         error: "User not created",
                     });
-                    expect(e.statusCode).toBe(404);
+                    expect(e.response.statusCode).toBe(404);
                 }
 
                 expect(nameSpy.callCount).toBe(0);
@@ -1800,13 +1796,12 @@ describe('Appservice', () => {
             appservice.on("query.room", roomSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
-                    json: true,
+                    searchParams: {access_token: hsToken},
                     ...opts,
-                });
+                }).json();
                 expect(res).toMatchObject(expected);
 
                 expect(createRoomSpy.callCount).toBe(1);
@@ -1870,13 +1865,12 @@ describe('Appservice', () => {
             appservice.on("query.room", roomSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
-                    json: true,
+                    searchParams: {access_token: hsToken},
                     ...opts,
-                });
+                }).json();
                 expect(res).toMatchObject(expected);
 
                 expect(createRoomSpy.callCount).toBe(1);
@@ -1940,13 +1934,12 @@ describe('Appservice', () => {
             appservice.on("query.room", roomSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "GET",
-                    qs: {access_token: hsToken},
-                    json: true,
+                    searchParams: {access_token: hsToken},
                     ...opts,
-                });
+                }).json();
                 expect(res).toMatchObject(expected);
 
                 expect(createRoomSpy.callCount).toBe(1);
@@ -2011,22 +2004,21 @@ describe('Appservice', () => {
 
             async function doCall(route: string, opts: any = {}) {
                 try {
-                    await requestPromise({
-                        uri: `http://localhost:${port}${route}`,
+                    await got({
+                        url: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
-                        json: true,
+                        searchParams: {access_token: hsToken},
                         ...opts,
-                    });
+                    }).json();
 
                     // noinspection ExceptionCaughtLocallyJS
                     throw new Error("Request finished when it should not have");
                 } catch (e) {
-                    expect(e.error).toMatchObject({
+                    expect(JSON.parse(e.response.body)).toMatchObject({
                         errcode: "ROOM_DOES_NOT_EXIST",
                         error: "Room not created",
                     });
-                    expect(e.statusCode).toBe(404);
+                    expect(e.response.statusCode).toBe(404);
                 }
 
                 expect(createRoomSpy.callCount).toBe(0);
@@ -2091,22 +2083,21 @@ describe('Appservice', () => {
 
             async function doCall(route: string, opts: any = {}) {
                 try {
-                    await requestPromise({
-                        uri: `http://localhost:${port}${route}`,
+                    await got({
+                        url: `http://localhost:${port}${route}`,
                         method: "GET",
-                        qs: {access_token: hsToken},
-                        json: true,
+                        searchParams: {access_token: hsToken},
                         ...opts,
-                    });
+                    }).json();
 
                     // noinspection ExceptionCaughtLocallyJS
                     throw new Error("Request finished when it should not have");
                 } catch (e) {
-                    expect(e.error).toMatchObject({
+                    expect(JSON.parse(e.response.body)).toMatchObject({
                         errcode: "ROOM_DOES_NOT_EXIST",
                         error: "Room not created",
                     });
-                    expect(e.statusCode).toBe(404);
+                    expect(e.response.statusCode).toBe(404);
                 }
 
                 expect(createRoomSpy.callCount).toBe(0);
@@ -2132,9 +2123,9 @@ describe('Appservice', () => {
         });
         try {
             appservice.on("thirdparty.protocol", getProtoSpy);
-            const result = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[0]);
+            const result = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[0], {}, {}, true);
             expect(result).toEqual(responseObj);
-            const result2 = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[1]);
+            const result2 = await doCall("/_matrix/app/v1/thirdparty/protocol/" + protos[1], {}, {}, true);
             expect(result2).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2153,8 +2144,8 @@ describe('Appservice', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Request finished when it should not have");
         } catch (e) {
-            expect(e.error).toMatchObject(expectedError);
-            expect(e.statusCode).toBe(expectedStatus);
+            expect(JSON.parse(e.response.body)).toMatchObject(expectedError);
+            expect(e.response.statusCode).toBe(expectedStatus);
         } finally {
             appservice.stop();
         }
@@ -2175,7 +2166,7 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.user.remote", getUserSpy);
         try {
-            const result = await doCall("/_matrix/app/v1/thirdparty/user/" + protocolId, {}, userFields);
+            const result = await doCall("/_matrix/app/v1/thirdparty/user/" + protocolId, {}, userFields, true);
             expect(result).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2192,7 +2183,7 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.user.matrix", getUserSpy);
         try {
-            const result = await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId});
+            const result = await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId}, true);
             expect(result).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2206,11 +2197,11 @@ describe('Appservice', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Request finished when it should not have");
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "PROTOCOL_NOT_HANDLED",
                 error: "Protocol is not handled by this appservice",
             });
-            expect(e.statusCode).toBe(404);
+            expect(e.response.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
@@ -2227,11 +2218,11 @@ describe('Appservice', () => {
         try {
             await doCall("/_matrix/app/v1/thirdparty/user", {}, {userid: expectedUserId});
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
                 error: "No mappings found"
             });
-            expect(e.statusCode).toBe(404);
+            expect(e.response.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
@@ -2253,11 +2244,11 @@ describe('Appservice', () => {
         try {
             await doCall("/_matrix/app/v1/thirdparty/user/" + protocolId, {}, userFields);
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
                 error: "No mappings found"
             });
-            expect(e.statusCode).toBe(404);
+            expect(e.response.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
@@ -2270,11 +2261,11 @@ describe('Appservice', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Request finished when it should not have");
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "INVALID_PARAMETERS",
                 error: "Invalid parameters given",
             });
-            expect(e.statusCode).toBe(400);
+            expect(e.response.statusCode).toBe(400);
         } finally {
             appservice.stop();
         }
@@ -2295,7 +2286,7 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.location.remote", getLocationSpy);
         try {
-            const result = await doCall("/_matrix/app/v1/thirdparty/location/" + protocolId, {}, locationFields);
+            const result = await doCall("/_matrix/app/v1/thirdparty/location/" + protocolId, {}, locationFields, true);
             expect(result).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2312,7 +2303,7 @@ describe('Appservice', () => {
         });
         appservice.on("thirdparty.location.matrix", getLocationSpy);
         try {
-            const result = await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias});
+            const result = await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias}, true);
             expect(result).toEqual(responseObj);
         } finally {
             appservice.stop();
@@ -2326,11 +2317,11 @@ describe('Appservice', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Request finished when it should not have");
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "PROTOCOL_NOT_HANDLED",
                 error: "Protocol is not handled by this appservice",
             });
-            expect(e.statusCode).toBe(404);
+            expect(e.response.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
@@ -2347,11 +2338,11 @@ describe('Appservice', () => {
         try {
             await doCall("/_matrix/app/v1/thirdparty/location", {}, {alias: expectedAlias});
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
                 error: "No mappings found"
             });
-            expect(e.statusCode).toBe(404);
+            expect(e.response.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
@@ -2373,11 +2364,11 @@ describe('Appservice', () => {
         try {
             await doCall("/_matrix/app/v1/thirdparty/location/" + protocolId, {}, locationFields);
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "NO_MAPPING_FOUND",
                 error: "No mappings found"
             });
-            expect(e.statusCode).toBe(404);
+            expect(e.response.statusCode).toBe(404);
         } finally {
             appservice.stop();
         }
@@ -2390,11 +2381,11 @@ describe('Appservice', () => {
             // noinspection ExceptionCaughtLocallyJS
             throw new Error("Request finished when it should not have");
         } catch (e) {
-            expect(e.error).toMatchObject({
+            expect(JSON.parse(e.response.body)).toMatchObject({
                 errcode: "INVALID_PARAMETERS",
                 error: "Invalid parameters given",
             });
-            expect(e.statusCode).toBe(400);
+            expect(e.response.statusCode).toBe(400);
         } finally {
             appservice.stop();
         }
@@ -2427,7 +2418,7 @@ describe('Appservice', () => {
         };
 
         const http = new MockHttpBackend();
-        setRequestFn(http.requestFn);
+        setRequestFn(requestWrapper(http.requestFn));
 
         http.when("PUT", "/_matrix/client/r0/directory/list/appservice").respond(200, (path, content) => {
             expect(path).toEqual(`${hsUrl}/_matrix/client/r0/directory/list/appservice/${encodeURIComponent(networkId)}/${encodeURIComponent(roomId)}`);
