@@ -15,6 +15,8 @@ import { Presence } from "./models/Presence";
 import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
 import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEvent";
 import { EventContext } from "./models/EventContext";
+import { OptionsOfDefaultResponseBody } from "got/dist/source/create";
+import * as stream from "stream";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -1074,27 +1076,27 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public uploadContentFromUrl(url: string): Promise<string> {
-        return new Promise<{ body: Buffer, contentType: string }>((resolve, reject) => {
+        return new Promise<{ body: Buffer, contentType: string }>(async (resolve, reject) => {
             const requestId = ++this.requestId;
-            const params = {
-                uri: url,
+            const params: OptionsOfDefaultResponseBody = {
+                url: url,
                 method: "GET",
                 encoding: null,
             };
-            getRequestFn()(params, (err, response, resBody) => {
-                if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
-                    reject(err);
-                } else {
-                    const contentType = response.headers['content-type'] || "application/octet-stream";
+            try {
+                let response = await getRequestFn()(params);
+                const contentType = response.headers['content-type'] || "application/octet-stream";
 
-                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
-                    if (response.statusCode < 200 || response.statusCode >= 300) {
-                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "<data>");
-                        reject(response);
-                    } else resolve({body: resBody, contentType: contentType});
-                }
-            });
+                LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", "<data>");
+                if (response.statusCode < 200 || response.statusCode >= 300) {
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "<data>");
+                    reject(response);
+                } else resolve({body: Buffer.from(response.body), contentType: contentType});
+            } catch (err) {
+                LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
+                reject(err);
+            }
+
         }).then(obj => {
             return this.uploadContent(obj.body, obj.contentType);
         });
@@ -1230,7 +1232,7 @@ export class MatrixClient extends EventEmitter {
      * @returns {Promise<any>} Resolves to the response (body), rejected if a non-2xx status code was returned.
      */
     @timedMatrixClientFunctionCall()
-    public doRequest(method, endpoint, qs = null, body = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
+    public doRequest(method, endpoint, qs = null, body: string | Buffer | stream.Readable | object | null = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
 
@@ -1257,60 +1259,53 @@ export class MatrixClient extends EventEmitter {
             if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
         }
 
-        const params: { [k: string]: any } = {
-            uri: url,
+        const params: OptionsOfDefaultResponseBody = {
+            url: url,
             method: method,
-            qs: qs,
-            // If this is undefined, then a string will be returned. If it's null, a Buffer will be returned.
-            encoding: noEncoding === false ? undefined : null,
-            userQuerystring: true,
-            qsStringifyOptions: {
-                options: {arrayFormat: 'repeat'},
-            },
+            searchParams: qs,
+            // @ts-ignore
+            responseType: noEncoding === false ? "text" : "buffer",
             timeout: timeout,
             headers: headers,
+            allowGetBody: true,
         };
 
         if (Buffer.isBuffer(body)) {
             params.headers["Content-Type"] = contentType;
             params.body = body;
+        } else if (body === null) {
+            params.body = null
         } else {
             params.headers["Content-Type"] = "application/json";
             params.body = JSON.stringify(body);
         }
 
-        return new Promise((resolve, reject) => {
-            getRequestFn()(params, (err, response, resBody) => {
-                if (err) {
-                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
-                    reject(err);
-                } else {
-                    if (typeof (resBody) === 'string') {
-                        try {
-                            resBody = JSON.parse(resBody);
-                        } catch (e) {
-                        }
-                    }
+        return new Promise(async (resolve, reject) => {
+            try {
 
-                    if (typeof (response.body) === 'string') {
-                        try {
-                            response.body = JSON.parse(response.body);
-                        } catch (e) {
-                        }
+                let response = await getRequestFn()(params);
+                let body = response.body;
+                if (typeof (response.body) === 'string') {
+                    try {
+                        body = JSON.parse(response.body);
+                    } catch (e) {
+                        reject(e);
                     }
-
-                    // Don't log the body unless we're in debug mode. They can be large.
-                    if (LogService.level.includes(LogLevel.DEBUG)) {
-                        const redactedBody = this.redactObjectForLogging(response.body);
-                        LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
-                    }
-                    if (response.statusCode < 200 || response.statusCode >= 300) {
-                        const redactedBody = this.redactObjectForLogging(response.body);
-                        LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
-                        reject(response);
-                    } else resolve(raw ? response : resBody);
                 }
-            });
+                // Don't log the body unless we're in debug mode. They can be large.
+                if (LogService.level.includes(LogLevel.DEBUG)) {
+                    const redactedBody = this.redactObjectForLogging(body);
+                    LogService.debug("MatrixLiteClient (REQ-" + requestId + " RESP-H" + response.statusCode + ")", redactedBody);
+                }
+                if (response.statusCode < 200 || response.statusCode >= 300) {
+                    const redactedBody = this.redactObjectForLogging(body);
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
+                    reject(response);
+                } else resolve(raw ? response : body);
+            } catch (err) {
+                LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
+                reject(err);
+            }
         });
     }
 

@@ -17,7 +17,7 @@
     "docs": "jsdoc -c jsdoc.json -P package.json",
     "build": "tsc",
     "lint": "tslint --project ./tsconfig.json -t stylish",
-    "test": "ts-mocha --project ./tsconfig.json test/**/*.ts",
+    "test": "ts-mocha --require source-map-support/register --project ./tsconfig.json test/**/*.ts",
     "build:examples": "tsc -p tsconfig-examples.json",
     "example:appservice": "yarn build:examples && node lib/examples/appservice.js",
     "example:login_register": "yarn build:examples && node lib/examples/login_register.js"
@@ -57,8 +57,7 @@
     "lru-cache": "^5.1.1",
     "mkdirp": "^0.5.1",
     "morgan": "^1.9.1",
-    "request": "^2.88.0",
-    "request-promise": "^4.2.5",
+    "got": "^10.7.0",
     "sanitize-html": "^1.20.1"
   },
   "devDependencies": {
@@ -72,6 +71,7 @@
     "matrix-mock-request": "^1.2.3",
     "mocha": "^6.2.2",
     "simple-mock": "^0.8.0",
+    "source-map-support": "^0.5.16",
     "tmp": "^0.1.0",
     "ts-mocha": "^6.0.0",
     "tslint": "^5.20.1",

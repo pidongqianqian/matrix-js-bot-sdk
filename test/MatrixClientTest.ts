@@ -9,7 +9,7 @@ import {
 } from "../src";
 import * as simple from "simple-mock";
 import * as MockHttpBackend from 'matrix-mock-request';
-import { expectArrayEquals } from "./TestUtils";
+import { expectArrayEquals, requestWrapper } from "./TestUtils";
 import { Membership } from "../src/models/events/MembershipEvent";
 
 export function createTestClient(storage: IStorageProvider = null): { client: MatrixClient, http: MockHttpBackend, hsUrl: string, accessToken: string } {
@@ -17,9 +17,9 @@ export function createTestClient(storage: IStorageProvider = null): { client: Ma
     const hsUrl = "https://localhost";
     const accessToken = "s3cret";
     const client = new MatrixClient(hsUrl, accessToken, storage);
-    setRequestFn(http.requestFn);
+    setRequestFn(requestWrapper(http.requestFn));
 
-    return {http, hsUrl, accessToken, client};
+    return {client, http, hsUrl, accessToken};
 }
 
 describe('MatrixClient', () => {
@@ -51,7 +51,7 @@ describe('MatrixClient', () => {
 
             const testFn = ((_, cb) => cb(null, {statusCode: 200}));
             const spy = simple.spy(testFn);
-            setRequestFn(spy);
+            setRequestFn(requestWrapper(spy));
 
             await client.doRequest("GET", "/test");
             expect(spy.callCount).toBe(1);
@@ -1942,7 +1942,11 @@ describe('MatrixClient', () => {
         it('should use the right endpoint', async () => {
             const {client, http, hsUrl} = createTestClient();
 
-            const targetEvent = {eventId: "$test:example.org", type: "m.room.message", content: {body: "test", msgtype: "m.text"}};
+            const targetEvent = {
+                eventId: "$test:example.org",
+                type: "m.room.message",
+                content: {body: "test", msgtype: "m.text"}
+            };
             const before = [{type: "m.room.message", content: {body: "1", msgtype: "m.text"}}, {
                 type: "m.room.message",
                 content: {body: "2", msgtype: "m.text"}
@@ -3284,7 +3288,7 @@ describe('MatrixClient', () => {
 
             http.when("GET", "/_matrix/media/r0/download/").respond(200, (path, _, req) => {
                 expect(path).toContain("/_matrix/media/r0/download/" + urlPart);
-                expect(req.opts.encoding).toEqual(null);
+                expect(req.opts.encoding).toEqual(undefined);
                 // TODO: Honestly, I have no idea how to coerce the mock library to return headers or buffers,
                 // so this is left as a fun activity.
                 // return {
