@@ -1303,8 +1303,8 @@ export class MatrixClient extends EventEmitter {
                     reject(response);
                 } else resolve(raw ? response : body);
             } catch (err) {
-                LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
-                reject(err);
+                LogService.error("MatrixLiteClient (REQ-" + requestId + ")", (err.response && err.response.body) || err);
+                reject(err.response || err);
             }
         });
     }
