@@ -626,12 +626,9 @@ describe('SynchronousMatrixClient', () => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
             });
-            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {
-            });
-            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {
-            });
-            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {
-            });
+            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {});
+            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {});
+            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {});
             const syncMessageSpy = simple.mock(realClient, 'onRoomMessage').callFn((rid, ev) => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
@@ -695,12 +692,9 @@ describe('SynchronousMatrixClient', () => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
             });
-            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {
-            });
-            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {
-            });
-            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {
-            });
+            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {});
+            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {});
+            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {});
             const syncArchiveSpy = simple.mock(realClient, 'onRoomArchived').callFn((rid, ev) => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
@@ -764,12 +758,9 @@ describe('SynchronousMatrixClient', () => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
             });
-            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {
-            });
-            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {
-            });
-            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {
-            });
+            const syncJoinSpy = simple.mock(realClient, 'onRoomJoin').callFn(() => {});
+            const syncInviteSpy = simple.mock(realClient, 'onRoomInvite').callFn(() => {});
+            const syncLeaveSpy = simple.mock(realClient, 'onRoomLeave').callFn(() => {});
             const syncUpgradedSpy = simple.mock(realClient, 'onRoomUpgraded').callFn((rid, ev) => {
                 expect(rid).toEqual(roomId);
                 expect(events).toContain(ev);
