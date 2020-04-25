@@ -1300,11 +1300,18 @@ export class MatrixClient extends EventEmitter {
                 if (response.statusCode < 200 || response.statusCode >= 300) {
                     const redactedBody = this.redactObjectForLogging(resBody);
                     LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
+                    try {
+                        response.body = JSON.parse(response.body);
+                    } catch { }
                     reject(response);
                 } else resolve(raw ? response : resBody);
             } catch (err) {
                 LogService.error("MatrixLiteClient (REQ-" + requestId + ")", (err.response && err.response.body) || err);
-                reject(err.response || err);
+                err = err.response || err;
+                try {
+                    err.body = JSON.parse(err.body);
+                } catch { }
+                reject(err);
             }
         });
     }
