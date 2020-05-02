@@ -326,10 +326,32 @@ export class Appservice extends EventEmitter {
      * Starts the application service, opening the bind address to begin processing requests.
      * @returns {Promise<any>} resolves when started
      */
-    public begin(): Promise<any> {
-        return new Promise((resolve, reject) => {
-            this.appServer = this.app.listen(this.options.port, this.options.bindAddress, () => resolve());
-        }).then(() => this.botIntent.ensureRegistered());
+    public async begin(): Promise<any> {
+        await new Promise((resolve, reject) => {
+            this.appServer = this.app.listen(this.options.port, this.options.bindAddress, resolve);
+        });
+        const registerBotIntent = async () => {
+            try {
+                await this.botIntent.ensureRegistered();
+            } catch (err) {
+                if (err.code === "ECONNREFUSED") {
+                    return new Promise((resolve, reject) => {
+                        const TIMEOUT_RETRY = 10000;
+                        setTimeout(async () => {
+                            try {
+                                await registerBotIntent();
+                                resolve();
+                            } catch (err) {
+                                reject(err);
+                            }
+                        }, TIMEOUT_RETRY);
+                    });
+                } else {
+                    throw err;
+                }
+            }
+        };
+        await registerBotIntent();
     }
 
     /**
