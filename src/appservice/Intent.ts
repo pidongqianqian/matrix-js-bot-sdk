@@ -192,7 +192,7 @@ export class Intent {
                     if (this.userId === this.appservice.botUserId) {
                         return null;
                     } else {
-                        LogService.error("Appservice", "Error registering user: User ID is in use");
+                        LogService.warn("Appservice", "Error registering user: User ID is in use");
                         return null;
                     }
                 } else {

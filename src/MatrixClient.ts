@@ -1299,6 +1299,8 @@ export class MatrixClient extends EventEmitter {
                 }
                 if (response.statusCode < 200 || response.statusCode >= 300) {
                     const redactedBody = this.redactObjectForLogging(resBody);
+                    // we log the request again as else it can be hard to find which error relates to which request.
+                    LogService.error("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
                     LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
                     try {
                         response.body = JSON.parse(response.body);
