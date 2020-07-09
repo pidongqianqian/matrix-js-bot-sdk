@@ -1259,10 +1259,28 @@ export class MatrixClient extends EventEmitter {
             if (body && Buffer.isBuffer(body)) LogService.debug("MatrixLiteClient (REQ-" + requestId + ")", "body = <Buffer>");
         }
 
+        let searchParams: URLSearchParams | undefined | string;
+        if (typeof qs === "string") {
+            searchParams = qs;
+        } else if (qs) {
+            searchParams = new URLSearchParams();
+            for (const [key, value] of Object.entries(qs)) {
+                if (Array.isArray(value)) {
+                    for (const v of value) {
+                        if (v !== null && v !== undefined) {
+                            searchParams.append(key, v);
+                        }
+                    }
+                } else if (value !== null && value !== undefined) {
+                    searchParams.append(key, value);
+                }
+            }
+        }
+
         const params: OptionsOfDefaultResponseBody = {
             url: url,
             method: method,
-            searchParams: qs,
+            searchParams,
             // @ts-ignore
             responseType: noEncoding === false ? "text" : "buffer",
             timeout: timeout,

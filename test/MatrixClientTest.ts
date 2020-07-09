@@ -110,7 +110,7 @@ describe('MatrixClient', () => {
         it('should send the appropriate query string', async () => {
             const {client, http} = createTestClient();
 
-            const expectedInput = {test: 1234};
+            const expectedInput = {test: "1234"};
             http.when("GET", "/test").respond(200, (path, content, req) => {
                 expect(req.opts.qs).toMatchObject(expectedInput);
                 return {};
@@ -1965,7 +1965,7 @@ describe('MatrixClient', () => {
 
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/context/${encodeURIComponent(targetEvent.eventId)}`);
-                expect(req.opts.qs['limit']).toEqual(limit);
+                expect(req.opts.qs['limit']).toEqual(limit.toString());
                 return {
                     event: targetEvent,
                     events_before: before,
@@ -2353,7 +2353,7 @@ describe('MatrixClient', () => {
             http.when("GET", "/_matrix/client/r0/rooms").respond(200, (path, content, req) => {
                 expect(path).toEqual(`${hsUrl}/_matrix/client/r0/rooms/${encodeURIComponent(roomId)}/members`);
                 expectArrayEquals(forMemberships, req.opts.qs.membership);
-                expectArrayEquals(forNotMemberships, req.opts.qs.not_membership);
+                expect(req.opts.qs.not_membership).toEqual(forNotMemberships[0]);
                 return {chunk: memberEvents};
             });
 
@@ -3244,7 +3244,7 @@ describe('MatrixClient', () => {
 
             http.when("POST", "/_matrix/media/r0/upload").respond(200, (path, content, req) => {
                 expect(content).toBeDefined();
-                expect(req.opts.qs.filename).toEqual(filename);
+                expect(req.opts.qs.filename).toEqual(filename || undefined);
                 expect(req.opts.headers["Content-Type"]).toEqual(contentType);
                 expect(req.opts.body).toEqual(data);
                 return {content_uri: uri};
