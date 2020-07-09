@@ -1268,11 +1268,11 @@ export class MatrixClient extends EventEmitter {
                 if (Array.isArray(value)) {
                     for (const v of value) {
                         if (v !== null && v !== undefined) {
-                            searchParams.append(key, v);
+                            searchParams.append(key, v.toString());
                         }
                     }
                 } else if (value !== null && value !== undefined) {
-                    searchParams.append(key, value);
+                    searchParams.append(key, value.toString());
                 }
             }
         }

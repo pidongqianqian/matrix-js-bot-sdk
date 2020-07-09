@@ -1,6 +1,6 @@
 {
   "name": "@sorunome/matrix-bot-sdk",
-  "version": "0.5.3-4",
+  "version": "0.5.3-5",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
