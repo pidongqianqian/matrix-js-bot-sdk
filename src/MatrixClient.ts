@@ -17,6 +17,7 @@ import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEve
 import { EventContext } from "./models/EventContext";
 import { OptionsOfDefaultResponseBody } from "got/dist/source/create";
 import * as stream from "stream";
+import { URLSearchParams } from "url";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
