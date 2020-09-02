@@ -15,7 +15,7 @@ import { Presence } from "./models/Presence";
 import { Membership, MembershipEvent } from "./models/events/MembershipEvent";
 import { RoomEvent, RoomEventContent, StateEvent } from "./models/events/RoomEvent";
 import { EventContext } from "./models/EventContext";
-import { OptionsOfDefaultResponseBody } from "got/dist/source/create";
+import { OptionsOfBufferResponseBody, OptionsOfJSONResponseBody } from "got";
 import * as stream from "stream";
 import { URLSearchParams } from "url";
 
@@ -1079,7 +1079,7 @@ export class MatrixClient extends EventEmitter {
     public uploadContentFromUrl(url: string): Promise<string> {
         return new Promise<{ body: Buffer, contentType: string }>(async (resolve, reject) => {
             const requestId = ++this.requestId;
-            const params: OptionsOfDefaultResponseBody = {
+            const params: OptionsOfJSONResponseBody = {
                 url: url,
                 method: "GET",
                 encoding: null,
@@ -1092,7 +1092,7 @@ export class MatrixClient extends EventEmitter {
                 if (response.statusCode < 200 || response.statusCode >= 300) {
                     LogService.error("MatrixLiteClient (REQ-" + requestId + ")", "<data>");
                     reject(response);
-                } else resolve({body: Buffer.from(response.body), contentType: contentType});
+                } else resolve({body: Buffer.from((response.body as string) || ""), contentType: contentType});
             } catch (err) {
                 LogService.error("MatrixLiteClient (REQ-" + requestId + ")", err);
                 reject(err);
@@ -1278,7 +1278,7 @@ export class MatrixClient extends EventEmitter {
             }
         }
 
-        const params: OptionsOfDefaultResponseBody = {
+        const params: OptionsOfJSONResponseBody | OptionsOfBufferResponseBody = {
             url: url,
             method: method,
             searchParams,
@@ -1322,7 +1322,7 @@ export class MatrixClient extends EventEmitter {
                     LogService.error("MatrixLiteClient (REQ-" + requestId + ")", method + " " + url);
                     LogService.error("MatrixLiteClient (REQ-" + requestId + ")", redactedBody);
                     try {
-                        response.body = JSON.parse(response.body);
+                        response.body = JSON.parse((response.body as string) || "");
                     } catch { }
                     reject(response);
                 } else resolve(raw ? response : resBody);
