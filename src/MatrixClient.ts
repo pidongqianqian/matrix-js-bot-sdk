@@ -18,6 +18,8 @@ import { EventContext } from "./models/EventContext";
 import { OptionsOfBufferResponseBody, OptionsOfJSONResponseBody } from "got";
 import * as stream from "stream";
 import { URLSearchParams } from "url";
+import { PowerLevelBounds } from "./models/PowerLevelBounds";
+import { EventKind } from "./models/events/EventKind";
 
 /**
  * A client that is capable of interacting with a matrix homeserver.
@@ -155,7 +157,7 @@ export class MatrixClient extends EventEmitter {
         if (!this.eventProcessors[event["type"]]) return event;
 
         for (const processor of this.eventProcessors[event["type"]]) {
-            await processor.processEvent(event, this);
+            await processor.processEvent(event, this, EventKind.RoomEvent);
         }
 
         return event;
@@ -176,7 +178,7 @@ export class MatrixClient extends EventEmitter {
     /**
      * Retrieves content from room account data.
      * @param {string} eventType The type of room account data to retrieve.
-     * @param {string} roomId The room to read the account data from
+     * @param {string} roomId The room to read the account data from.
      * @returns {Promise<any>} Resolves to the content of that account data.
      */
     @timedMatrixClientFunctionCall()
@@ -185,6 +187,41 @@ export class MatrixClient extends EventEmitter {
         eventType = encodeURIComponent(eventType);
         roomId = encodeURIComponent(roomId);
         return this.doRequest("GET", "/_matrix/client/r0/user/" + userId + "/rooms/" + roomId + "/account_data/" + eventType);
+    }
+
+    /**
+     * Retrieves content from account data. If the account data request throws an error,
+     * this simply returns the default provided.
+     * @param {string} eventType The type of account data to retrieve.
+     * @param {any} defaultContent The default value. Defaults to null.
+     * @returns {Promise<any>} Resolves to the content of that account data, or the default.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getSafeAccountData(eventType: string, defaultContent: any = null): Promise<any> {
+        try {
+            return await this.getAccountData(eventType);
+        } catch (e) {
+            LogService.warn("MatrixClient", `Error getting ${eventType} account data:`, e);
+            return defaultContent;
+        }
+    }
+
+    /**
+     * Retrieves content from room account data. If the account data request throws an error,
+     * this simply returns the default provided.
+     * @param {string} eventType The type of room account data to retrieve.
+     * @param {string} roomId The room to read the account data from.
+     * @param {any} defaultContent The default value. Defaults to null.
+     * @returns {Promise<any>} Resolves to the content of that room account data, or the default.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getSafeRoomAccountData(eventType: string, roomId: string, defaultContent: any = null): Promise<any> {
+        try {
+            return await this.getRoomAccountData(eventType, roomId);
+        } catch (e) {
+            LogService.warn("MatrixClient", `Error getting ${eventType} room account data in ${roomId}:`, e);
+            return defaultContent;
+        }
     }
 
     /**
@@ -246,6 +283,30 @@ export class MatrixClient extends EventEmitter {
             presence: presence,
             status_msg: statusMessage,
         });
+    }
+
+    /**
+     * Gets a published alias for the given room. These are supplied by the room admins
+     * and should point to the room, but may not. This is primarily intended to be used
+     * in the context of rendering a mention (pill) for a room.
+     * @param {string} roomIdOrAlias The room ID or alias to get an alias for.
+     * @returns {Promise<string>} Resolves to a published room alias, or falsey if none found.
+     */
+    @timedMatrixClientFunctionCall()
+    public async getPublishedAlias(roomIdOrAlias: string): Promise<string> {
+        try {
+            const roomId = await this.resolveRoom(roomIdOrAlias);
+            const event = await this.getRoomStateEvent(roomId, "m.room.canonical_alias", "");
+            if (!event) return null;
+
+            const canonical = event['alias'];
+            const alt = event['alt_aliases'] || [];
+
+            return canonical || alt[0];
+        } catch (e) {
+            // Assume none
+            return null;
+        }
     }
 
     /**
@@ -513,6 +574,21 @@ export class MatrixClient extends EventEmitter {
         if (!emitFn) emitFn = (e, ...p) => Promise.resolve<any>(this.emit(e, ...p));
 
         if (!raw) return; // nothing to process
+
+        if (raw['groups']) {
+            const leave = raw['groups']['leave'] || {};
+            for (const groupId of Object.keys(leave)) {
+                await emitFn("unstable.group.leave", groupId, leave[groupId]);
+            }
+            const join = raw['groups']['join'] || {};
+            for (const groupId of Object.keys(join)) {
+                await emitFn("unstable.group.join", groupId, join[groupId]);
+            }
+            const invite = raw['groups']['invite'] || {};
+            for (const groupId of Object.keys(invite)) {
+                await emitFn("unstable.group.invite", groupId, invite[groupId]);
+            }
+        }
 
         if (raw['account_data'] && raw['account_data']['events']) {
             for (const event of raw['account_data']['events']) {
@@ -986,6 +1062,44 @@ export class MatrixClient extends EventEmitter {
     }
 
     /**
+     * Determines the boundary conditions for this client's ability to change another user's power level
+     * in a given room. This will identify the maximum possible level this client can change the user to,
+     * and if that change could even be possible. If the returned object indicates that the client can
+     * change the power level of the user, the client is able to set the power level to any value equal
+     * to or less than the maximum value.
+     * @param {string} targetUserId The user ID to compare against.
+     * @param {string} roomId The room ID to compare within.
+     * @returns {Promise<PowerLevelBounds>} The bounds of the client's ability to change the user's power level.
+     */
+    @timedMatrixClientFunctionCall()
+    public async calculatePowerLevelChangeBoundsOn(targetUserId: string, roomId: string): Promise<PowerLevelBounds> {
+        const myUserId = await this.getUserId();
+
+        const canChangePower = await this.userHasPowerLevelFor(myUserId, roomId, "m.room.power_levels", true);
+        if (!canChangePower) return {canModify: false, maximumPossibleLevel: 0};
+
+        const powerLevelsEvent = await this.getRoomStateEvent(roomId, "m.room.power_levels", "");
+        if (!powerLevelsEvent) {
+            throw new Error("No power level event found");
+        }
+
+        let targetUserPower = 0;
+        let myUserPower = 0;
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][targetUserId]) targetUserPower = powerLevelsEvent["users"][targetUserId];
+        if (powerLevelsEvent["users"] && powerLevelsEvent["users"][myUserId]) myUserPower = powerLevelsEvent["users"][myUserId];
+
+        if (myUserId === targetUserId) {
+            return {canModify: true, maximumPossibleLevel: myUserPower};
+        }
+
+        if (targetUserPower >= myUserPower) {
+            return {canModify: false, maximumPossibleLevel: myUserPower};
+        }
+
+        return {canModify: true, maximumPossibleLevel: myUserPower};
+    }
+
+    /**
      * Sets the power level for a given user ID in the given room. Note that this is not safe to
      * call multiple times concurrently as changes are not atomic. This will throw an error if
      * the user lacks enough permission to change the power level, or if a power level event is
@@ -1236,6 +1350,7 @@ export class MatrixClient extends EventEmitter {
     public doRequest(method, endpoint, qs = null, body: string | Buffer | stream.Readable | object | null = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
         if (!endpoint.startsWith('/'))
             endpoint = '/' + endpoint;
+        }
 
         const requestId = ++this.requestId;
         const url = this.homeserverUrl + endpoint;

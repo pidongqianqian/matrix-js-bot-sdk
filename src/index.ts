@@ -32,8 +32,11 @@ export * from "./mixins/AutojoinUpgradedRoomsMixin";
 // Models
 export * from "./models/Presence";
 export * from "./models/MatrixProfile";
+export * from "./models/EventContext";
+export * from "./models/PowerLevelBounds";
 
 // Event models
+export * from "./models/events/EventKind";
 export * from "./models/events/converter";
 export * from "./models/events/InvalidEventError";
 export * from "./models/events/Event";
@@ -75,3 +78,4 @@ export * from "./AdminApis";
 export * from "./request";
 export * from "./PantalaimonClient";
 export * from "./SynchronousMatrixClient";
+export * from "./SynapseAdminApis";
