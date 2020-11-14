@@ -1348,7 +1348,7 @@ export class MatrixClient extends EventEmitter {
      */
     @timedMatrixClientFunctionCall()
     public doRequest(method, endpoint, qs = null, body: string | Buffer | stream.Readable | object | null = null, timeout = 60000, raw = false, contentType = "application/json", noEncoding = false): Promise<any> {
-        if (!endpoint.startsWith('/'))
+        if (!endpoint.startsWith('/')) {
             endpoint = '/' + endpoint;
         }
 

@@ -939,10 +939,10 @@ describe('Appservice', () => {
             appservice.on("ephemeral.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1003,10 +1003,10 @@ describe('Appservice', () => {
             appservice.on("ephemeral.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1067,10 +1067,10 @@ describe('Appservice', () => {
             appservice.on("ephemeral.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1130,10 +1130,10 @@ describe('Appservice', () => {
             appservice.on("ephemeral.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1345,10 +1345,10 @@ describe('Appservice', () => {
             appservice.on("ephemeral.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
@@ -1529,10 +1529,10 @@ describe('Appservice', () => {
             appservice.on("ephemeral.event", eventSpy);
 
             async function doCall(route: string, opts: any = {}) {
-                const res = await requestPromise({
-                    uri: `http://localhost:${port}${route}`,
+                const res = await got({
+                    url: `http://localhost:${port}${route}`,
                     method: "PUT",
-                    qs: {access_token: hsToken},
+                    searchParams: {access_token: hsToken},
                     ...opts,
                 });
                 expect(res).toMatchObject({});
