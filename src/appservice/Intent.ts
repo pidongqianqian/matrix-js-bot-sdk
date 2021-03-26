@@ -55,6 +55,22 @@ export class Intent {
     }
 
     /**
+     * kick user from a room.
+     * @param {string} userId The user(ID) to leave
+     * @param {string} roomId The room ID to leave
+     * @param {string} reason The Reason
+     * @returns {Promise<any>} resolves when completed.
+     */
+    @timedIntentFunctionCall()
+    public async kickUser(userId: string, roomId: string, reason: string): Promise<any> {
+        await this.ensureRegistered();
+        return this.client.kickUser(userId, roomId, reason).then(async () => {
+            // Recalculate joined rooms now that we've left a room
+            // await this.refreshJoinedRooms();
+        });
+    }
+
+    /**
      * Joins the given room
      * @param {string} roomIdOrAlias the room ID or alias to join
      * @returns {Promise<string>} resolves to the joined room ID
