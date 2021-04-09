@@ -1,4 +1,4 @@
-import { IAppserviceStorageProvider, LogService, MatrixClient, Metrics } from "..";
+import {IAppserviceStorageProvider, LogService, MatrixClient, Metrics, timedMatrixClientFunctionCall} from "..";
 import { Appservice, IAppserviceOptions } from "./Appservice";
 
 // noinspection TypeScriptPreferShortImport
@@ -66,6 +66,26 @@ export class Intent {
         await this.ensureRegistered();
         if (this.knownJoinedRooms.length === 0) await this.refreshJoinedRooms();
         return this.knownJoinedRooms.map(r => r); // clone
+    }
+
+    @timedIntentFunctionCall()
+    public async getRoomMembers(roomId: string): Promise<any> {
+        // await this.ensureRegistered();
+        return this.client.getRoomMembers(roomId).then(async () => {
+            // Recalculate joined rooms now that we've left a room
+            // await this.refreshJoinedRooms();
+        });
+    }
+
+    /**
+     * Invites a user to a room.
+     * @param {string} userId the user ID to invite
+     * @param {string} roomId the room ID to invite the user to
+     * @returns {Promise<any>} resolves when completed
+     */
+    @timedIntentFunctionCall()
+    public async inviteUser(userId: string, roomId: string): Promise<any>{
+        return this.client.inviteUser(userId, roomId);
     }
 
     /**
