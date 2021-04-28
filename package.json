@@ -1,6 +1,6 @@
 {
-  "name": "@sorunome/matrix-bot-sdk",
-  "version": "0.5.8",
+  "name": "@pidong/matrix-bot-sdk",
+  "version": "0.5.9",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
@@ -51,13 +51,13 @@
     "chalk": "^4.1.0",
     "express": "^4.17.1",
     "glob-to-regexp": "^0.4.1",
+    "got": "^11.6.0",
     "hash.js": "^1.1.7",
     "htmlencode": "^0.0.4",
     "lowdb": "^1.0.0",
     "lru-cache": "^6.0.0",
     "mkdirp": "^1.0.4",
     "morgan": "^1.10.0",
-    "got": "^11.6.0",
     "sanitize-html": "^1.27.2"
   },
   "devDependencies": {
