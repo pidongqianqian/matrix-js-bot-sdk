@@ -27,6 +27,7 @@ export interface MembershipEventContent {
     is_direct?: boolean;
     unsigned?: any;
     user_id?: string;
+    state_key?: string;
     third_party_invite?: {
         display_name: string;
         signed: any;
