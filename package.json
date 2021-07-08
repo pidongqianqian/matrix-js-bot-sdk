@@ -1,6 +1,6 @@
 {
   "name": "@pidong/matrix-bot-sdk",
-  "version": "0.5.9",
+  "version": "0.5.9-beta1",
   "description": "A lightweight version of the matrix-js-sdk intended for bots",
   "repository": {
     "type": "git",
